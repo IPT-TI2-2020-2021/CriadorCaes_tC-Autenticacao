@@ -10,8 +10,16 @@ using CriadorCaes.Models;
 using Microsoft.AspNetCore.Http;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CriadorCaes.Controllers {
+  
+   /// <summary>
+   /// controller para efetuar a gestão das fotografias dos cães
+   /// </summary>
+   
+   [Authorize]  // este anotador impede o acesso ao objeto protegido
+                // se o utilizador não estiver autenticado
    public class FotografiasController : Controller {
 
       /// <summary>
@@ -33,6 +41,12 @@ namespace CriadorCaes.Controllers {
       }
 
       // GET: Fotografias
+      /// <summary>
+      /// lista as fotos dos cães
+      /// </summary>
+      /// <returns></returns>
+      
+      [AllowAnonymous] // esta anotação anula o efeito do [Authorize]
       public async Task<IActionResult> Index() {
 
          /* o comando seguinte é equivalente
