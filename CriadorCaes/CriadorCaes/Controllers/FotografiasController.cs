@@ -11,13 +11,14 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace CriadorCaes.Controllers {
-  
+
    /// <summary>
    /// controller para efetuar a gestão das fotografias dos cães
    /// </summary>
-   
+
    [Authorize]  // este anotador impede o acesso ao objeto protegido
                 // se o utilizador não estiver autenticado
    public class FotografiasController : Controller {
@@ -32,12 +33,19 @@ namespace CriadorCaes.Controllers {
       /// </summary>
       private readonly IWebHostEnvironment _dadosServidor;
 
+      /// <summary>
+      /// Atributo que irá receber todos os dados referentes à
+      /// pessoa q se autenticou no sistema
+      /// </summary>
+      private readonly UserManager<IdentityUser> _userManager;
 
       public FotografiasController(
          CriadorCaesBD context,
-         IWebHostEnvironment dadosServidor) {
+         IWebHostEnvironment dadosServidor,
+         UserManager<IdentityUser> userManager) {
          _db = context;
          _dadosServidor = dadosServidor;
+         _userManager = userManager;
       }
 
       // GET: Fotografias
@@ -45,7 +53,7 @@ namespace CriadorCaes.Controllers {
       /// lista as fotos dos cães
       /// </summary>
       /// <returns></returns>
-      
+
       [AllowAnonymous] // esta anotação anula o efeito do [Authorize]
       public async Task<IActionResult> Index() {
 
@@ -54,11 +62,33 @@ namespace CriadorCaes.Controllers {
           * FROM Fotografia f, Caes c
           * WHERE f.caoFK = c.id
           */
-         var listaFotosCaes = _db.Fotografias.Include(f => f.Cao);  // LINQ
+         var listaFotosCaes = await _db.Fotografias.Include(f => f.Cao)
+                                                  .OrderByDescending(f => f.DataFoto)  // LINQ
+                                                  .ToListAsync();
+         // var. auxiliar
+         string username = _userManager.GetUserId(User);
+
+         // quais o(s) cão/cães da pessoa q se autenticou?
+         var listaCaes = await (from c in _db.Caes
+                                join cc in _db.CriadoresCaes on c.Id equals cc.CaoFK
+                                join cr in _db.Criadores on cc.CriadorFK equals cr.Id
+                                where cr.UserNameId == username
+                                select c.Id)
+                               .ToListAsync();
+
+         // é uma opção, mas não a vamos usar...
+         // ViewBag.caes = listaCaes;
+
+         // vamos usar um 'ViewModel'
+         // para o transporte
+         var listaFotos = new ListarFotosViewModel {
+            ListaFotos = listaFotosCaes,
+            ListaCaes = listaCaes
+         };
 
          // invocar a View, entregando-lhe os dados devolvidos pela BD
          // sendo transformados numa LISTA assíncrona
-         return View(await listaFotosCaes.ToListAsync());
+         return View(listaFotos);
       }
 
 
@@ -85,9 +115,19 @@ namespace CriadorCaes.Controllers {
       // GET: Fotografias/Create
       public IActionResult Create() {
 
-         // prepara os dados a serem enviados para a View
-         // para a Dropdown
-         ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome");
+         //// prepara os dados a serem enviados para a View
+         //// para a Dropdown
+         //ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome");
+
+         var listaCaes = (from c in _db.Caes
+                          join cc in _db.CriadoresCaes on c.Id equals cc.CaoFK
+                          join cr in _db.Criadores on cc.CriadorFK equals cr.Id
+                          where cr.UserNameId == _userManager.GetUserId(User)
+                          select c)
+                         .OrderBy(c => c.Nome);
+
+         ViewData["CaoFK"] = new SelectList(listaCaes, "Id", "Nome");
+
 
          return View();
       }
@@ -95,6 +135,7 @@ namespace CriadorCaes.Controllers {
       // POST: Fotografias/Create
       // To protect from overposting attacks, enable the specific properties you want to bind to.
       // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+
       [HttpPost]
       [ValidateAntiForgeryToken]
       public async Task<IActionResult> Create([Bind("DataFoto,Local,CaoFK")] Fotografias foto, IFormFile fotoCao) {
@@ -115,6 +156,13 @@ namespace CriadorCaes.Controllers {
           *                  notificando o utilizador que deve selecionar uma fotografia
           */
 
+         // lista dos cães que pertencem à pessoa a q se autentica
+         var listaCaes = (from c in _db.Caes
+                          join cc in _db.CriadoresCaes on c.Id equals cc.CaoFK
+                          join cr in _db.Criadores on cc.CriadorFK equals cr.Id
+                          where cr.UserNameId == _userManager.GetUserId(User)
+                          select c)
+                         .OrderBy(c => c.Nome);
 
          // avaliar se existe ficheiro
          if (fotoCao == null) {
@@ -125,7 +173,8 @@ namespace CriadorCaes.Controllers {
             // devolver o controlo à View
             // prepara os dados a serem enviados para a View
             // para a Dropdown
-            ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome");
+            // ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome");
+            ViewData["CaoFK"] = new SelectList(listaCaes, "Id", "Nome");
             return View();
          }
 
@@ -153,7 +202,8 @@ namespace CriadorCaes.Controllers {
             // devolver o controlo à View
             // prepara os dados a serem enviados para a View
             // para a Dropdown
-            ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome");
+            //  ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome");
+            ViewData["CaoFK"] = new SelectList(listaCaes, "Id", "Nome");
             return View();
          }
 
@@ -192,7 +242,8 @@ namespace CriadorCaes.Controllers {
             ModelState.AddModelError("", "Não se esqueça de escolher um cão...");
          }
 
-         ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome", foto.CaoFK);
+         //     ViewData["CaoFK"] = new SelectList(_db.Caes.OrderBy(c => c.Nome), "Id", "Nome", foto.CaoFK);
+         ViewData["CaoFK"] = new SelectList(listaCaes, "Id", "Nome");
 
          return View(foto);
       }

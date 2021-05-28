@@ -1,4 +1,4 @@
-﻿@model IEnumerable<CriadorCaes.Models.Fotografias>
+﻿@model CriadorCaes.Models.ListarFotosViewModel
 @* esta linha identifica a origem e o tipo dos dados q chegam à View *@
 
 @{
@@ -21,24 +21,24 @@
                @Html -> designado como HTML Helper
                em concreto, este acede ao Modelo e mostra o nome da atributo 'Fotografia'
             *@
-            @Html.DisplayNameFor(model => model.Fotografia)
+            @Html.DisplayNameFor(model => model.ListaFotos.FirstOrDefault().Fotografia)
          </th>
          @if (User.Identity.IsAuthenticated) {
             <th>
-               @Html.DisplayNameFor(model => model.DataFoto)
+               @Html.DisplayNameFor(model => model.ListaFotos.FirstOrDefault().DataFoto)
             </th>
             @*<th>
                   @Html.DisplayNameFor(model => model.Local)
                </th>*@
             <th>
-               @Html.DisplayNameFor(model => model.Cao)
+               @Html.DisplayNameFor(model => model.ListaFotos.FirstOrDefault().Cao)
             </th>
             <th></th>
          }
       </tr>
    </thead>
    <tbody>
-      @foreach (var item in Model) {
+      @foreach (var item in Model.ListaFotos) {
          <tr>
             <td>
                @*
@@ -61,18 +61,31 @@
                      @Html.DisplayFor(modelItem => item.Local)
                   </td>*@
                <td>
-                  @* este HTML Helper está a mostrar os dados do Cão associado à fotografia  *@
-                  <a asp-action="Details"
-                     asp-controller="Cao"
-                     asp-route-id="@item.CaoFK">
+                  @* este HTML Helper está a mostrar os dados do Cão associado à fotografia
                      @Html.DisplayFor(modelItem => item.Cao.Nome)
-                  </a>
+                  *@
+
+                  @* permitir o acesso aos dados do cão, se ele for da pessoa que está autenticada*@
+                  @if (Model.ListaCaes.Contains(item.CaoFK)) {
+                     <a asp-action="Details"
+                        asp-controller="Cao"
+                        asp-route-id="@item.CaoFK">
+                        @Html.DisplayFor(modelItem => item.Cao.Nome)
+                     </a>
+                  }
+                  else {
+                     @Html.DisplayFor(modelItem => item.Cao.Nome)
+                  }
                </td>
                <td>
-                  <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                  <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                  <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> |
-                  <a asp-action="DeleteDois" asp-route-id="@item.Id">Delete 2</a>
+                  @if (Model.ListaCaes.Contains(item.CaoFK)) {
+                     <text>
+                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                        <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                        <a asp-action="Delete" asp-route-id="@item.Id">Delete</a> |
+                        <a asp-action="DeleteDois" asp-route-id="@item.Id">Delete 2</a>
+                     </text>
+                  }
                </td>
             }
          </tr>
