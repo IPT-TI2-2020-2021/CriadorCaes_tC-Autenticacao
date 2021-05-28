@@ -71,6 +71,15 @@ namespace CriadorCaes.Models {
       [Display(Name = "Telemóvel")]
       public string Telemovel { get; set; }
 
+      //###########################################################################
+      // FK para a tabela de Autenticação
+      //###########################################################################
+      /// <summary>
+      /// Chave de ligação entre a Autenticação e os Criadores 
+      /// Consegue-se, por exemplo, filtrar os dados dos criadores qd se autenticam
+      /// </summary>
+      public string UserNameId { get; set; }
+      //###########################################################################
 
 
       //************************************************************************
@@ -79,5 +88,5 @@ namespace CriadorCaes.Models {
       public ICollection<CriadoresCaes> ListaDeCaes { get; set; }
       //************************************************************************
 
-   }
+   } // fim class Criadores
 }

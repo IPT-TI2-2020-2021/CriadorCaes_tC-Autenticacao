@@ -61,6 +61,11 @@ namespace CriadorCaes.Controllers {
          return View(await listaFotosCaes.ToListAsync());
       }
 
+
+
+
+
+
       // GET: Fotografias/Details/5
       public async Task<IActionResult> Details(int? id) {
          if (id == null) {
