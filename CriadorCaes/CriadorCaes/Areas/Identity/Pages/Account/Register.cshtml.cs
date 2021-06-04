@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
+using CriadorCaes.Data;
 using CriadorCaes.Models;
 
 using Microsoft.AspNetCore.Authentication;
@@ -20,22 +21,35 @@ using Microsoft.Extensions.Logging;
 namespace CriadorCaes.Areas.Identity.Pages.Account {
    [AllowAnonymous]
    public class RegisterModel : PageModel {
+
       //     private readonly SignInManager<IdentityUser> _signInManager;
       private readonly UserManager<IdentityUser> _userManager;
       private readonly ILogger<RegisterModel> _logger;
-      private readonly IEmailSender _emailSender;
+      // private readonly IEmailSender _emailSender;
+
+      /// <summary>
+      /// atributo que referencia a Base de Dados do projeto
+      /// </summary>
+      private readonly CriadorCaesBD _db;
 
       public RegisterModel(
           UserManager<IdentityUser> userManager,
       //    SignInManager<IdentityUser> signInManager,
           ILogger<RegisterModel> logger,
-          IEmailSender emailSender) {
+      //    IEmailSender emailSender
+          CriadorCaesBD db
+         ) {
          _userManager = userManager;
          //   _signInManager = signInManager;
          _logger = logger;
-         _emailSender = emailSender;
+         //  _emailSender = emailSender;
+         _db = db;
       }
 
+      /// <summary>
+      /// objeto que irá transportar os dados entre o formulário e o 'código'
+      /// i.e., irá transportar os dados entre o Browser e o Servidor
+      /// </summary>
       [BindProperty] // adiciona 'memória' ao HTTP
       public InputModel Input { get; set; }
 
@@ -88,8 +102,14 @@ namespace CriadorCaes.Areas.Identity.Pages.Account {
             // se entrei aqui, é pq os dados recolhidos são válidos
 
             // criar um objecto do tipo 'user'
-            // com os dados da pessoa q se autentica
-            var user = new IdentityUser { UserName = Input.Email, Email = Input.Email };
+            // com os dados da pessoa q se registou
+            var user = new IdentityUser {
+               UserName = Input.Email,
+               Email = Input.Email,
+               LockoutEnd = new DateTime(DateTime.Now.Year + 10,
+                                          DateTime.Now.Month,
+                                          DateTime.Now.Day)
+            };
 
             // vou tentar criar o utilizador
             var result = await _userManager.CreateAsync(user, Input.Password);
@@ -97,9 +117,37 @@ namespace CriadorCaes.Areas.Identity.Pages.Account {
             if (result.Succeeded) {
                _logger.LogInformation("User created a new account with password.");
 
-               // aqui alguma coisa será feita...
+               // se aqui cheguei, é pq foi criado com sucesso o novo utilizador
+               // então, é preciso guardar os dados do novo Criador
+               //   -- é preciso obter os dados do Criador
+               //   -- guardá-los na base de dados
 
+               // recuperar os dados do Criador
+               // atribuir ao Criador o email que será usado na autenticação
+               Input.Criador.Email = Input.Email;
+               // atribuir ao Criador o ID do user q acabou de se criar
+               Input.Criador.UserNameId = user.Id;
 
+               try {
+                  // guardar os dados na BD
+                  await _db.AddAsync(Input.Criador);
+
+                  // consolidar a operação de guardar
+                  await _db.SaveChangesAsync();
+
+                  // já não há nada a fazer,
+                  // redirecionar para a página de confirmação de criação de conta
+                  return RedirectToPage("RegisterConfirmation");
+               }
+               catch (Exception) {
+                  // houve um erro na criação de um Criador
+                  // Além da mensagem de erro,
+                  ModelState.AddModelError("", "Houve um erro com a criação do utilizador");
+                  //  deverá ser apagada o User q foi previamente criado
+                  await _userManager.DeleteAsync(user);
+                  // devolver os dados à página
+                  return Page();
+               }
                //var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                //code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
                //var callbackUrl = Url.Page(
