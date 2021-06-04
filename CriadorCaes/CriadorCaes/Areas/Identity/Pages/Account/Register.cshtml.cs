@@ -118,17 +118,23 @@ namespace CriadorCaes.Areas.Identity.Pages.Account {
                _logger.LogInformation("User created a new account with password.");
 
                // se aqui cheguei, é pq foi criado com sucesso o novo utilizador
-               // então, é preciso guardar os dados do novo Criador
+               // primeiro q tudo, vou adicionar esse novo utilizador ao Role 'Criador'
+               // depois, é preciso guardar os dados do novo Criador
                //   -- é preciso obter os dados do Criador
                //   -- guardá-los na base de dados
 
-               // recuperar os dados do Criador
-               // atribuir ao Criador o email que será usado na autenticação
-               Input.Criador.Email = Input.Email;
-               // atribuir ao Criador o ID do user q acabou de se criar
-               Input.Criador.UserNameId = user.Id;
 
                try {
+                  // adicionar ao Role
+                  await _userManager.AddToRoleAsync(user, "Criador");
+
+                  // recuperar os dados do Criador
+                  // atribuir ao Criador o email que será usado na autenticação
+                  Input.Criador.Email = Input.Email;
+                  // atribuir ao Criador o ID do user q acabou de se criar
+                  Input.Criador.UserNameId = user.Id;
+
+
                   // guardar os dados na BD
                   await _db.AddAsync(Input.Criador);
 

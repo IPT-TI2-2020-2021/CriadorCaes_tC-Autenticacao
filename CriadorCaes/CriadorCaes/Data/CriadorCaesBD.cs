@@ -1,5 +1,6 @@
 ﻿using CriadorCaes.Models;
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,21 +25,33 @@ namespace CriadorCaes.Data {
          // definido na classe DbContext
          base.OnModelCreating(modelBuilder);
 
+
          //*********************************************************************
-         // acrescentar novas tarefas...
+         // acrescentar novos dados às tabelas - seed das tabelas
          //*********************************************************************
+
+         // adicionar os Roles
+         modelBuilder.Entity<IdentityRole>().HasData(
+            new IdentityRole { Id = "c", Name = "Criador", NormalizedName = "CRIADOR" },
+            new IdentityRole { Id = "g", Name = "Gestor",  NormalizedName = "GESTOR" }
+         );
+
+
+         //modelBuilder.Entity<IdentityUser>().HasData(
+         //   new IdentityUser { }
+         //   );
 
          // adicionar dados às tabelas da BD
          modelBuilder.Entity<Racas>().HasData(
-           new Racas { Id = 1, Designacao = "Retriever do Labrador" },
-           new Racas { Id = 2, Designacao = "Serra da Estrela" },
-           new Racas { Id = 3, Designacao = "Pastor Alemão" },
-           new Racas { Id = 4, Designacao = "Dogue Alemão" },
-           new Racas { Id = 5, Designacao = "S. Bernardo" },
-           new Racas { Id = 6, Designacao = "Rafeiro do Alentejo" },
-           new Racas { Id = 7, Designacao = "Golden Retriever" },
-           new Racas { Id = 8, Designacao = "Border Collie" }
-        );
+              new Racas { Id = 1, Designacao = "Retriever do Labrador" },
+              new Racas { Id = 2, Designacao = "Serra da Estrela" },
+              new Racas { Id = 3, Designacao = "Pastor Alemão" },
+              new Racas { Id = 4, Designacao = "Dogue Alemão" },
+              new Racas { Id = 5, Designacao = "S. Bernardo" },
+              new Racas { Id = 6, Designacao = "Rafeiro do Alentejo" },
+              new Racas { Id = 7, Designacao = "Golden Retriever" },
+              new Racas { Id = 8, Designacao = "Border Collie" }
+           );
 
          modelBuilder.Entity<Criadores>().HasData(
             new Criadores { Id = 1, Nome = "Marisa Vieira", NomeComercial = "da Quinta do Conde", Morada = "Largo do Pelourinho", CodPostal = "2305 - 515 PAIALVO", Email = "Marisa.Freitas@iol.pt", Telemovel = "967197885" },

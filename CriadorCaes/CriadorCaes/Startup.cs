@@ -39,7 +39,8 @@ namespace CriadorCaes {
          services.AddDatabaseDeveloperPageExceptionFilter();
 
          services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-             .AddEntityFrameworkStores<CriadorCaesBD>();
+                 .AddRoles<IdentityRole>() // ativa a utilização de Roles
+                 .AddEntityFrameworkStores<CriadorCaesBD>();
          services.AddControllersWithViews();
       }
 
